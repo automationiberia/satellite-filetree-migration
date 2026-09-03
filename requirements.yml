@@ -1,0 +1,4 @@
+---
+collections:
+  - name: infra.satellite_configuration
+  - name: redhat.satellite

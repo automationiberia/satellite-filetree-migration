@@ -1,0 +1,6 @@
+---
+# Bulk import: everything except lifecycle_environments, locations and manifest (reserved for demo).
+satellite_configuration_dispatch_manifest_upload: false
+satellite_configuration_dispatch_manifest_validate: false
+# Defer CV publish to keep bulk run shorter; content views are still created.
+satellite_configuration_dispatch_content_view_publish_promote: false

@@ -1,0 +1,230 @@
+---
+# Factory reset on the target Satellite: remove all organizations except Default Organization
+# and delete global migration artifacts (hostgroups, subnets, domains, locations, etc.).
+# Usage: ansible-playbook playbooks/cleanup.yml -e @vars/satellite.yml
+- name: Cleanup target Satellite
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment: "{{ satellite_proxy_environment }}"
+  collections:
+    - redhat.satellite
+  vars:
+    satellite: "{{ satellite_target }}"
+    satellite_cleanup_preserve_users:
+      - admin
+    satellite_cleanup_preserve_locations:
+      - Default Location
+    satellite_cleanup_preserve_organizations:
+      - Default Organization
+    satellite_cleanup_preserve_domains:
+      - "{{ (satellite.server_url | urlsplit('hostname')).split('.')[1:] | join('.') }}"
+  module_defaults:
+    group/redhat.satellite.satellite:
+      username: "{{ satellite.admin.username }}"
+      password: "{{ satellite.admin.password }}"
+      server_url: "{{ satellite.server_url }}"
+      validate_certs: "{{ satellite.validate_certs }}"
+  tasks:
+    - name: Ensure target Satellite connection is defined
+      ansible.builtin.assert:
+        that:
+          - satellite is defined
+          - satellite.server_url is defined
+          - satellite.admin is defined
+        fail_msg: Define satellite_target in vars/satellite.yml before running cleanup.
+
+    - name: Get organizations
+      redhat.satellite.organization_info:
+      register: cleanup_organizations
+
+    - name: Delete custom organizations
+      redhat.satellite.organization:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_organizations.organizations | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - cleanup_organizations.organizations | default([]) | length > 0
+        - item.name not in satellite_cleanup_preserve_organizations
+      ignore_errors: true
+
+    - name: Get host groups
+      redhat.satellite.hostgroup_info:
+      register: cleanup_hostgroups
+
+    - name: Delete host groups
+      redhat.satellite.hostgroup:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_hostgroups.hostgroups | default([]) | sort(attribute='name', reverse=true) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: cleanup_hostgroups.hostgroups | default([]) | length > 0
+      retries: 3
+      delay: 5
+      until: cleanup_hostgroup_delete is succeeded
+      register: cleanup_hostgroup_delete
+      ignore_errors: true
+
+    - name: Get subnets
+      redhat.satellite.subnet_info:
+      register: cleanup_subnets
+
+    - name: Delete subnets
+      redhat.satellite.subnet:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_subnets.subnets | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: cleanup_subnets.subnets | default([]) | length > 0
+      ignore_errors: true
+
+    - name: Get domains
+      redhat.satellite.domain_info:
+      register: cleanup_domains
+
+    - name: Delete domains
+      redhat.satellite.domain:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_domains.domains | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - cleanup_domains.domains | default([]) | length > 0
+        - item.name not in satellite_cleanup_preserve_domains
+      ignore_errors: true
+
+    - name: Get locations
+      redhat.satellite.resource_info:
+        resource: locations
+      register: cleanup_locations
+
+    - name: Delete custom locations
+      redhat.satellite.location:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_locations.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - cleanup_locations.resources | default([]) | length > 0
+        - item.name not in satellite_cleanup_preserve_locations
+      ignore_errors: true
+
+    - name: Get operating systems
+      redhat.satellite.resource_info:
+        resource: operatingsystems
+      register: cleanup_operatingsystems
+
+    - name: Delete operating systems
+      redhat.satellite.operatingsystem:
+        name: "{{ item.name }}"
+        family: "{{ item.family }}"
+        major: "{{ item.major }}"
+        minor: "{{ item.minor | default(omit) }}"
+        state: absent
+      loop: "{{ cleanup_operatingsystems.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: cleanup_operatingsystems.resources | default([]) | length > 0
+      ignore_errors: true
+
+    - name: Get provisioning templates
+      redhat.satellite.resource_info:
+        resource: provisioning_templates
+      register: cleanup_provisioning_templates
+
+    - name: Delete provisioning templates
+      redhat.satellite.provisioning_template:
+        name: "{{ item.name }}"
+        template_kind: "{{ item.template_kind | default(item.kind) }}"
+        state: absent
+      loop: "{{ cleanup_provisioning_templates.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: cleanup_provisioning_templates.resources | default([]) | length > 0
+      ignore_errors: true
+
+    - name: Get partition tables
+      redhat.satellite.resource_info:
+        resource: ptables
+      register: cleanup_partition_tables
+
+    - name: Delete partition tables
+      redhat.satellite.partition_table:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_partition_tables.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: cleanup_partition_tables.resources | default([]) | length > 0
+      ignore_errors: true
+
+    - name: Get LDAP authentication sources
+      redhat.satellite.resource_info:
+        resource: auth_source_ldaps
+      register: cleanup_auth_sources
+
+    - name: Delete LDAP authentication sources
+      redhat.satellite.auth_source_ldap:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_auth_sources.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: cleanup_auth_sources.resources | default([]) | length > 0
+      ignore_errors: true
+
+    - name: Get user groups
+      redhat.satellite.resource_info:
+        resource: usergroups
+      register: cleanup_usergroups
+
+    - name: Delete user groups
+      redhat.satellite.usergroup:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_usergroups.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when: cleanup_usergroups.resources | default([]) | length > 0
+      ignore_errors: true
+
+    - name: Get users
+      redhat.satellite.resource_info:
+        resource: users
+      register: cleanup_users
+
+    - name: Delete custom users
+      redhat.satellite.user:
+        name: "{{ item.login }}"
+        state: absent
+      loop: "{{ cleanup_users.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.login }}"
+      when:
+        - cleanup_users.resources | default([]) | length > 0
+        - item.login not in satellite_cleanup_preserve_users
+      ignore_errors: true
+
+    - name: Get roles
+      redhat.satellite.resource_info:
+        resource: roles
+      register: cleanup_roles
+
+    - name: Delete custom roles
+      redhat.satellite.role:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ cleanup_roles.resources | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+      when:
+        - cleanup_roles.resources | default([]) | length > 0
+        - item.builtin | default(0) | int == 0
+        - not (item.locked | default(false) | bool)
+      ignore_errors: true

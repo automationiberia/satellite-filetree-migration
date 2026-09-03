@@ -1,0 +1,71 @@
+---
+# Import Satellite configuration from satellite_config/ into satellite_target.
+# Usage: ansible-playbook playbooks/import.yml -e @vars/satellite.yml -e @satellite_config/vault_template.yaml
+- name: Resolve Satellite connection for import
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment: "{{ satellite_proxy_environment }}"
+  tasks:
+    - name: Resolve satellite from satellite_target
+      ansible.builtin.set_fact:
+        satellite: "{{ satellite_target }}"
+      when: satellite_target is defined
+      tags: always
+
+    - name: Ensure satellite connection is defined
+      ansible.builtin.assert:
+        that:
+          - satellite is defined
+          - satellite.server_url is defined
+          - satellite.admin is defined
+        fail_msg: >-
+          Define satellite_target (preferred for round-trip) or satellite before
+          running the import playbook.
+      tags: always
+
+- name: Import Satellite configuration from filetree
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment: "{{ satellite_proxy_environment }}"
+  collections:
+    - infra.satellite_configuration
+    - redhat.satellite
+  module_defaults:
+    group/redhat.satellite.satellite:
+      username: "{{ satellite.admin.username }}"
+      password: "{{ satellite.admin.password }}"
+      server_url: "{{ satellite.server_url }}"
+      validate_certs: "{{ satellite.validate_certs }}"
+  tasks:
+    - name: Fetch target instance_id setting
+      redhat.satellite.setting_info:
+        name: instance_id
+      register: _import_target_instance_id
+
+    - name: Fetch target rhc_instance_id setting
+      redhat.satellite.setting_info:
+        name: rhc_instance_id
+      register: _import_target_rhc_instance_id
+
+    - name: Merge target host-specific settings into vault variables
+      ansible.builtin.set_fact:
+        vault_satellite_settings_host_specific: >-
+          {{
+            vault_satellite_settings_host_specific | default({})
+            | combine({
+                'instance_id': _import_target_instance_id.setting.value,
+                'rhc_instance_id': _import_target_rhc_instance_id.setting.value,
+                'unattended_url': 'https://' ~ (satellite.server_url | urlsplit('hostname')),
+                'foreman_tasks_troubleshooting_url': 'https://' ~ (satellite.server_url | urlsplit('hostname')) ~ '/foreman_tasks/bulk_cancel'
+              })
+          }}
+
+    - name: Load Satellite configuration from filetree
+      ansible.builtin.import_role:
+        name: infra.satellite_configuration.filetree_read
+
+    - name: Apply Satellite configuration
+      ansible.builtin.import_role:
+        name: infra.satellite_configuration.dispatch

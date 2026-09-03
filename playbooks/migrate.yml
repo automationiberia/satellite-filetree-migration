@@ -1,0 +1,15 @@
+---
+# Orchestrator: cleanup target, export, filter for organization, import to target.
+# Usage: ansible-playbook playbooks/migrate.yml -e @vars/satellite.yml
+# Review satellite_config/vault_template.yaml before import (step 4 runs automatically).
+- name: Cleanup target Satellite
+  ansible.builtin.import_playbook: cleanup.yml
+
+- name: Export Satellite configuration
+  ansible.builtin.import_playbook: export.yml
+
+- name: Filter CaC for organization
+  ansible.builtin.import_playbook: filter_organization.yml
+
+- name: Import Satellite configuration
+  ansible.builtin.import_playbook: import.yml

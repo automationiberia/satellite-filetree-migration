@@ -1,0 +1,110 @@
+---
+# Filter exported CaC fragments to keep only objects for satellite_organization_name.
+# Usage: ansible-playbook playbooks/filter_organization.yml -e @vars/satellite.yml
+- name: Filter Satellite CaC for organization
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    satellite_cac_path: "{{ satellite_configuration_filetree_path }}"
+    satellite_filter_org_scoped_keys:
+      - satellite_activation_keys
+      - satellite_products
+      - satellite_content_views
+      - satellite_lifecycle_environments
+      - satellite_sync_plans
+      - satellite_host_collections
+      - satellite_content_credentials
+      - satellite_content_view_filters
+      - satellite_repositories
+      - satellite_repository_sets
+    satellite_filter_global_keys:
+      - satellite_domains
+      - satellite_subnets
+      - satellite_hostgroups
+      - satellite_operatingsystems
+      - satellite_provisioning_templates
+      - satellite_partition_tables
+      - satellite_settings
+      - satellite_roles
+      - satellite_users
+      - satellite_usergroups
+      - satellite_auth_sources_ldap
+      - satellite_installation_mediums
+      - satellite_job_templates
+  tasks:
+    - name: Ensure CaC path exists
+      ansible.builtin.stat:
+        path: "{{ satellite_cac_path }}"
+      register: cac_path_stat
+
+    - name: Fail when CaC path is missing
+      ansible.builtin.fail:
+        msg: >-
+          CaC path {{ satellite_cac_path }} does not exist.
+          Run playbooks/export.yml first.
+      when: not cac_path_stat.stat.exists
+
+    - name: Find CaC fragment files
+      ansible.builtin.find:
+        paths: "{{ satellite_cac_path }}"
+        patterns: "*.yaml"
+        recurse: true
+      register: cac_files
+
+    - name: Filter each CaC fragment
+      ansible.builtin.include_tasks: tasks/filter_cac_file.yml
+      loop: >-
+        {{
+          cac_files.files
+          | map(attribute='path')
+          | reject('search', 'vault_template.yaml')
+          | list
+        }}
+      loop_control:
+        loop_var: cac_file_path
+        label: "{{ cac_file_path | basename }}"
+
+    - name: Find empty .d directories
+      ansible.builtin.find:
+        paths: "{{ satellite_cac_path }}"
+        patterns: "satellite_*.d"
+        file_type: directory
+        recurse: true
+      register: cac_dirs
+
+    - name: Remove empty .d directories
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: absent
+      loop: "{{ cac_dirs.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      when: (lookup('ansible.builtin.fileglob', item.path + '/*.yaml', wantlist=True) | length) == 0
+
+    - name: Check vault_template.yaml exists
+      ansible.builtin.stat:
+        path: "{{ satellite_cac_path }}/vault_template.yaml"
+      register: vault_template_stat
+
+    - name: Update installation medium target FQDN in vault_template.yaml
+      ansible.builtin.lineinfile:
+        path: "{{ satellite_cac_path }}/vault_template.yaml"
+        regexp: '^vault_satellite_installation_mediums_target_fqdn:'
+        line: "vault_satellite_installation_mediums_target_fqdn: {{ satellite_target.server_url | urlsplit('hostname') }}"
+        create: false
+      when: vault_template_stat.stat.exists
+
+    - name: Replace absolute paths in vault_template.yaml header comments
+      ansible.builtin.replace:
+        path: "{{ satellite_cac_path }}/vault_template.yaml"
+        regexp: '^# Import:.*$'
+        replace: "# Import: ansible-playbook playbooks/import.yml -e @vars/satellite.yml -e @{{ satellite_cac_path | regex_replace('^.*/', '') }}/vault_template.yaml"
+      when: vault_template_stat.stat.exists
+
+    - name: Replace absolute CaC path in vault_template.yaml header comments
+      ansible.builtin.replace:
+        path: "{{ satellite_cac_path }}/vault_template.yaml"
+        regexp: '^# CaC fragments under .* reference these variables directly\.$'
+        replace: "# CaC fragments under {{ satellite_cac_path | regex_replace('^.*/', '') }}/ reference these variables directly."
+      when: vault_template_stat.stat.exists

@@ -1,0 +1,26 @@
+# Local Python environment
+.venv/
+__pycache__/
+*.py[cod]
+
+# Ansible
+.ansible/
+collections/
+
+# Local configuration (copy from *.example)
+vars/satellite.yml
+vars/vault_import.yml
+
+# Exported / generated Configuration as Code
+satellite_config/
+satellite_config_demo/
+
+# Subscription manifests and other secrets
+manifests/*
+!manifests/.gitkeep
+manifest*.zip
+
+# Editor / OS
+*.swp
+*~
+.DS_Store

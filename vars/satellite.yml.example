@@ -1,0 +1,56 @@
+---
+# Copy to vars/satellite.yml and customize for your environment:
+#   cp vars/satellite.yml.example vars/satellite.yml
+#
+# Python interpreter for Satellite API modules (requests, PyYAML, PySocks)
+ansible_python_interpreter: "{{ playbook_dir }}/../.venv/bin/python"
+
+# SOCKS5 proxy (when Satellite APIs are reachable only via tunnel/VPN).
+satellite_socks_proxy_host: "127.0.0.1"
+satellite_socks_proxy_port: 51313
+# HTTP bridge for urllib/ansible.url lookups (scripts/http-socks-bridge.py).
+satellite_http_proxy_url: "http://127.0.0.1:18118"
+satellite_proxy_environment:
+  HTTP_PROXY: "{{ satellite_http_proxy_url }}"
+  HTTPS_PROXY: "{{ satellite_http_proxy_url }}"
+  NO_PROXY: "localhost,127.0.0.1"
+
+# Source Satellite (export)
+satellite_source:
+  server_url: "https://satellite-source.example.com"
+  validate_certs: false
+  admin:
+    username: admin
+    password: CHANGEME
+  template:
+    mode: "0666"
+
+# Target Satellite (import)
+satellite_target:
+  server_url: "https://satellite-target.example.com"
+  validate_certs: false
+  admin:
+    username: admin
+    password: CHANGEME
+  template:
+    mode: "0666"
+
+# Organization to migrate
+satellite_organization_name: example_org
+
+# CaC output/import path (relative to playbooks/)
+satellite_configuration_filetree_path: "{{ playbook_dir }}/../satellite_config"
+
+# Subscription manifest (local zip — no Customer Portal download)
+satellite_manifest_download: false
+satellite_manifests:
+  - organization: "{{ satellite_organization_name }}"
+    path: "{{ playbook_dir }}/../manifests/manifest_{{ satellite_organization_name }}.zip"
+    manifest_download: false
+satellite_configuration_dispatch_manifest_upload: true
+satellite_configuration_dispatch_manifest_validate: true
+satellite_configuration_dispatch_manifest_organization: "{{ satellite_organization_name }}"
+
+# Debug import failures (disable no_log on sensitive dispatch/read tasks)
+satellite_configuration_dispatch_secure_logging: false
+satellite_configuration_filetree_read_secure_logging: false

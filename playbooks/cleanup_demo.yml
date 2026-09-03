@@ -1,0 +1,110 @@
+---
+# Remove only objects applied by demo step 3 (org skeleton import tags).
+# Does NOT touch bulk-imported content (CVs, subnets, domains, hostgroups, etc.).
+# Usage: ansible-playbook playbooks/cleanup_demo.yml -e @vars/satellite.yml -e @vars/demo.yml
+- name: Cleanup demo objects on target Satellite
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment: "{{ satellite_proxy_environment }}"
+  collections:
+    - redhat.satellite
+  vars:
+    satellite: "{{ satellite_target }}"
+    demo_cac_path: "{{ satellite_configuration_filetree_path }}"
+    demo_le_fragment: "{{ lookup('ansible.builtin.fileglob', demo_cac_path ~ '/satellite_lifecycle_environments.d/satellite_lifecycle_environments.yaml', wantlist=True) | first | default('') }}"
+    demo_locations_fragment: "{{ lookup('ansible.builtin.fileglob', demo_cac_path ~ '/satellite_locations.d/satellite_locations.yaml', wantlist=True) | first | default('') }}"
+  module_defaults:
+    group/redhat.satellite.satellite:
+      username: "{{ satellite.admin.username }}"
+      password: "{{ satellite.admin.password }}"
+      server_url: "{{ satellite.server_url }}"
+      validate_certs: "{{ satellite.validate_certs }}"
+  tasks:
+    - name: Ensure target Satellite connection is defined
+      ansible.builtin.assert:
+        that:
+          - satellite is defined
+          - satellite.server_url is defined
+          - satellite.admin is defined
+        fail_msg: Define satellite_target in vars/satellite.yml before running cleanup.
+
+    - name: Check demo CaC path exists
+      ansible.builtin.stat:
+        path: "{{ demo_cac_path }}"
+      register: demo_cac_stat
+
+    - name: Fail when demo CaC path is missing
+      ansible.builtin.fail:
+        msg: >-
+          Demo CaC path {{ demo_cac_path }} does not exist.
+          Run ./scripts/demo.sh 1 and ./scripts/demo.sh 2 first.
+      when: not demo_cac_stat.stat.exists
+
+    - name: Load demo lifecycle environment names from CaC
+      ansible.builtin.set_fact:
+        demo_cleanup_lifecycle_environments: >-
+          {{
+            (lookup('file', demo_le_fragment) | from_yaml).satellite_lifecycle_environments
+            | default([])
+            | map(attribute='name')
+            | list
+            | reverse
+          }}
+      when: demo_le_fragment | length > 0
+
+    - name: Default empty demo lifecycle environment list
+      ansible.builtin.set_fact:
+        demo_cleanup_lifecycle_environments: []
+      when: demo_le_fragment | length == 0
+
+    - name: Load demo location names from CaC
+      ansible.builtin.set_fact:
+        demo_cleanup_locations: >-
+          {{
+            (lookup('file', demo_locations_fragment) | from_yaml).satellite_locations
+            | default([])
+            | map(attribute='name')
+            | list
+          }}
+      when: demo_locations_fragment | length > 0
+
+    - name: Default empty demo location list
+      ansible.builtin.set_fact:
+        demo_cleanup_locations: []
+      when: demo_locations_fragment | length == 0
+
+    - name: Show demo objects to remove
+      ansible.builtin.debug:
+        msg:
+          organization: "{{ satellite_organization_name }} (kept — bulk content may depend on it)"
+          lifecycle_environments: "{{ demo_cleanup_lifecycle_environments }}"
+          locations: "{{ demo_cleanup_locations }}"
+          manifest: "{{ satellite_organization_name }}"
+
+    - name: Remove subscription manifest from organization
+      redhat.satellite.subscription_manifest:
+        organization: "{{ satellite_organization_name }}"
+        state: absent
+      ignore_errors: true
+
+    - name: Delete demo lifecycle environments
+      redhat.satellite.lifecycle_environment:
+        name: "{{ item }}"
+        organization: "{{ satellite_organization_name }}"
+        state: absent
+      loop: "{{ demo_cleanup_lifecycle_environments }}"
+      loop_control:
+        label: "{{ item }}"
+      when: demo_cleanup_lifecycle_environments | length > 0
+      ignore_errors: true
+
+    - name: Delete demo locations
+      redhat.satellite.location:
+        name: "{{ item }}"
+        state: absent
+      loop: "{{ demo_cleanup_locations }}"
+      loop_control:
+        label: "{{ item }}"
+      when: demo_cleanup_locations | length > 0
+      ignore_errors: true

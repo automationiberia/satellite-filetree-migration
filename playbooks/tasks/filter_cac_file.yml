@@ -1,0 +1,98 @@
+---
+- name: Reset per-file filter state
+  ansible.builtin.set_fact:
+    cac_filter_applied: false
+
+- name: Read CaC fragment
+  ansible.builtin.slurp:
+    src: "{{ cac_file_path }}"
+  register: cac_file_content
+
+- name: Parse CaC fragment
+  ansible.builtin.set_fact:
+    cac_data: "{{ cac_file_content.content | b64decode | from_yaml }}"
+
+- name: Determine top-level CaC key
+  ansible.builtin.set_fact:
+    cac_key: "{{ cac_data.keys() | list | first }}"
+    cac_items: "{{ cac_data[cac_data.keys() | list | first] | default([]) }}"
+
+- name: Filter organizations
+  ansible.builtin.set_fact:
+    cac_items_filtered: >-
+      {{
+        cac_items
+        | selectattr('name', 'equalto', satellite_organization_name)
+        | list
+      }}
+    cac_filter_applied: true
+  when: cac_key == 'satellite_organizations'
+
+- name: Filter org-scoped objects
+  ansible.builtin.set_fact:
+    cac_items_filtered: >-
+      {{
+        cac_items
+        | selectattr('organization', 'defined')
+        | selectattr('organization', 'equalto', satellite_organization_name)
+        | list
+      }}
+    cac_filter_applied: true
+  when: cac_key in satellite_filter_org_scoped_keys
+
+- name: Filter locations by organization membership
+  ansible.builtin.set_fact:
+    cac_items_filtered: >-
+      {{
+        cac_items
+        | selectattr('organizations', 'defined')
+        | selectattr('organizations', 'contains', satellite_organization_name)
+        | map('combine', {'organizations': [satellite_organization_name]})
+        | list
+      }}
+    cac_filter_applied: true
+  when: cac_key == 'satellite_locations'
+
+- name: Keep global objects unchanged
+  ansible.builtin.set_fact:
+    cac_items_filtered: "{{ cac_items }}"
+    cac_filter_applied: true
+  when:
+    - cac_key in satellite_filter_global_keys
+    - not (cac_filter_applied | default(false) | bool)
+
+- name: Keep unknown object types unchanged
+  ansible.builtin.set_fact:
+    cac_items_filtered: "{{ cac_items }}"
+    cac_filter_applied: true
+  when: not (cac_filter_applied | default(false) | bool)
+
+- name: Remove CaC fragment when filtered list is empty
+  ansible.builtin.file:
+    path: "{{ cac_file_path }}"
+    state: absent
+  when:
+    - cac_filter_applied | default(false) | bool
+    - cac_items_filtered | default([]) | length == 0
+
+- name: Write filtered CaC fragment
+  when: cac_items_filtered | default([]) | length > 0
+  block:
+    - name: Build filtered CaC document
+      ansible.builtin.set_fact:
+        cac_document: "{{ {cac_key: cac_items_filtered} }}"
+
+    - name: Write filtered CaC fragment to disk
+      ansible.builtin.copy:
+        dest: "{{ cac_file_path }}"
+        content: "{{ cac_document | to_nice_yaml(indent=2, sort_keys=false) }}"
+        mode: "0664"
+
+- name: Reset parsed CaC variables
+  ansible.builtin.set_fact:
+    cac_data: null
+    cac_key: null
+    cac_items: null
+    cac_document: null
+    cac_items_filtered: null
+    cac_filter_applied: false

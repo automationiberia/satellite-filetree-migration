@@ -1,0 +1,40 @@
+---
+# Copy to vars/vault_import.yml and fill in secrets for import:
+#   cp vars/vault_import.yml.example vars/vault_import.yml
+#
+# Import-time secrets and target-specific values.
+
+vault_satellite_auth_sources_ldap_account_passwords:
+  "ldap.example.com": CHANGEME
+
+vault_satellite_users_passwords:
+  "admin": CHANGEME
+
+vault_satellite_users_default_password: CHANGEME
+
+vault_satellite_settings:
+  "remote_execution_effective_user_password": ""
+  "remote_execution_ssh_key_passphrase": ""
+  "remote_execution_ssh_password": ""
+  "root_pass": ""
+  "smtp_password": ""
+
+vault_satellite_settings_host_specific:
+  "instance_id": ""
+  "rhc_instance_id": ""
+  "unattended_url": "https://satellite-target.example.com"
+  "foreman_tasks_troubleshooting_url": "https://satellite-target.example.com/foreman_tasks/bulk_cancel"
+
+vault_satellite_hostgroup_parameters:
+  "Example Host Group":
+    "root_pw": CHANGEME
+
+vault_satellite_location_parameters:
+  "Example Location":
+    "system_location": CHANGEME
+
+vault_satellite_job_template_inputs:
+  "Configure Cloud Connector":
+    "satellite_cloud_connector_password": ""
+
+vault_satellite_installation_mediums_target_fqdn: satellite-target.example.com

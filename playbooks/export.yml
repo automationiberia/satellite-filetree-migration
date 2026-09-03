@@ -1,0 +1,27 @@
+---
+# Export Satellite configuration from satellite_source into satellite_config/.
+# Usage: ansible-playbook playbooks/export.yml -e @vars/satellite.yml
+- name: Export Satellite Configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  environment: "{{ satellite_proxy_environment }}"
+  collections:
+    - infra.satellite_configuration
+  tasks:
+    - name: Resolve source Satellite connection for export
+      ansible.builtin.set_fact:
+        satellite: "{{ satellite_source }}"
+      when: satellite_source is defined
+      tags: always
+
+    - name: Ensure that the output_path exists
+      ansible.builtin.file:
+        path: "{{ output_path }}"
+        mode: "0777"
+        state: directory
+      tags: always
+
+    - name: Get Satellite Objects
+      ansible.builtin.import_role:
+        name: infra.satellite_configuration.filetree_create
