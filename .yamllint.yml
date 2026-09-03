@@ -1,0 +1,15 @@
+---
+extends: default
+
+ignore: |
+  .venv/
+  .ansible/
+  collections/
+  satellite_config/
+  satellite_config_demo/
+  .github/
+
+rules:
+  line-length:
+    max: 200
+  comments-indentation: disable

@@ -1,7 +1,8 @@
-# satellite-filetree-migration — live demo script
+# Demo script: organization migration with Configuration as Code
 
-Presenter guide for migrating an organization with [`infra.satellite_configuration`](https://github.com/ansible-automation-platform/infra.satellite_configuration) (`filetree_create` → filter → `filetree_read` / `dispatch`).
+Presenter guide for migrating an organization with the [`infra.satellite_configuration`](https://github.com/redhat-cop/infra.satellite_configuration) collection (`filetree_create` → filter → `filetree_read` / `dispatch`).
 
+Set `satellite_organization_name` in `vars/satellite.yml` (default in the example: `example_org`).
 Migration from `satellite-source.example.com` → `satellite-target.example.com`.
 
 ---
@@ -182,13 +183,13 @@ ansible-playbook playbooks/filter_organization.yml -e @vars/satellite.yml
 
 ## Audience FAQ
 
-**Why two imports (bulk + demo)?**  
+**Why two imports (bulk + demo)?**
 Bulk brings operational configuration (repos, CVs, subnets…) quickly. The demo shows the visible core of a migration: LE, locations, and manifest.
 
-**Why is `vault_import.yml` needed?**  
+**Why is `vault_import.yml` needed?**
 Hidden parameters or target-specific values that export cannot carry in plain text.
 
-**How do I reset everything?**  
+**How do I reset everything?**
 `./scripts/demo.sh 100` — preparation only, **before** `export-full.sh`. Resets the target and deletes local `satellite_config/`. Then re-run export + filter.
 
 ---

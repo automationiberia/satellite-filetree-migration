@@ -1,0 +1,65 @@
+---
+exclude: |
+  (?x)^(
+    satellite_config/|
+    satellite_config_demo/|
+    collections/|
+    \.venv/|
+    \.ansible/
+  )
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+        exclude: ^\.github/
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint.yml]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        files: ^scripts/.*\.py$
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.10.0.1
+    hooks:
+      - id: shellcheck
+        files: ^scripts/.*\.sh$
+        args: [-e, SC1091]
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.17.2
+    hooks:
+      - id: markdownlint-cli2
+        files: \.md$
+
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
+    hooks:
+      - id: actionlint
+
+  - repo: local
+    hooks:
+      - id: python-compileall
+        name: python byte-compile scripts
+        entry: python -m compileall
+        language: system
+        pass_filenames: false
+        args: [scripts/]
+        files: ^scripts/.*\.py$
+
+      - id: ansible-checks
+        name: Ansible syntax-check and ansible-lint
+        entry: ./scripts/ci-ansible-checks.sh
+        language: system
+        pass_filenames: false
+        files: ^(playbooks/|requirements\.yml|ansible\.cfg|\.ansible-lint)

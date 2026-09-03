@@ -1,0 +1,8 @@
+ansible>=9
+ansible-lint>=24
+pre-commit>=4.0
+PySocks
+pyyaml
+requests
+ruff>=0.8
+yamllint>=1.35

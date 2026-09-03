@@ -1,0 +1,29 @@
+---
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tooling
+        run: pip install -r ci/requirements.txt
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r requirements.yml -p collections
+      - name: Run pre-commit
+        env:
+          ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/collections
+        run: pre-commit run --all-files --show-diff-on-failure

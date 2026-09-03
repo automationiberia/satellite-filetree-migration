@@ -1,6 +1,6 @@
-# satellite-filetree-migration
+# Satellite organization migration with Configuration as Code
 
-Ansible playbooks and scripts to migrate a Red Hat Satellite organization between instances using the [`infra.satellite_configuration`](https://github.com/ansible-automation-platform/infra.satellite_configuration) collection.
+Ansible playbooks and scripts to migrate a Red Hat Satellite organization between instances using the [`infra.satellite_configuration`](https://github.com/redhat-cop/infra.satellite_configuration) collection.
 
 The collection’s **filetree** workflow drives this repo:
 
@@ -28,9 +28,18 @@ python3 -m venv .venv
 # 4. Place subscription manifest zip under manifests/ (see vars/satellite.yml)
 ```
 
+## Development
+
+Install [pre-commit](https://pre-commit.com/) hooks (same checks as CI):
+
+```bash
+./scripts/setup-dev.sh
+pre-commit run --all-files   # manual run
+```
+
 ## Layout
 
-```
+```text
 ├── playbooks/          # export, import, filter, cleanup
 ├── scripts/            # demo.sh, export-full.sh, proxy bridge
 ├── vars/               # *.yml.example templates; copy to local *.yml
