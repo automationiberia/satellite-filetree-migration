@@ -12,24 +12,24 @@ Migration from `satellite-source.example.com` → `satellite-target.example.com`
 | Phase | Directory | What it does | When |
 |-------|-----------|--------------|------|
 | **Preparation** | `satellite_config/` | Factory reset (optional) → full export → filter | Before the session (or the night before) |
-| **Live demo** | `satellite_config/` + `satellite_config_demo/` | Bulk → demo export → filter → skeleton import | In front of the audience |
-| **Reset (demo only)** | — | Step 0: undo skeleton import | Between live runs, without re-exporting |
+| **Live demo** | `satellite_config/` + `satellite_config_demo/` | Bulk → demo export → filter → LE/locations/manifest import | In front of the audience |
+| **Reset (demo only)** | — | Step 0: undo demo import (LE, locations, manifest) | Between live runs, without re-exporting |
 
 ### Live steps (1–4)
 
 | Step | What it does | Approx. duration |
 |------|--------------|------------------|
 | **1 — Bulk** | Imports domains, CVs, subnets, sync plans, host collections… | ~30 s |
-| **2 — Export** | Exports org + LE + locations from source | ~1 min |
+| **2 — Export** | Exports LE + locations from source | ~1 min |
 | **3 — Filter** | Keeps only the target organization in demo CaC | ~5 s |
-| **4 — Import** | Applies org skeleton + manifest on target | ~1 min |
+| **4 — Import** | Applies LE, locations + manifest on target | ~1 min |
 
 ### What each step imports
 
 | Object | Bulk (step 1) | Demo import (step 4) |
 |--------|---------------|----------------------|
 | Domains, subnets, CVs, sync plans… | ✅ | — |
-| Target organization | ✅ (skeleton) | ✅ |
+| Target organization | ✅ (skeleton) | — |
 | Lifecycle environments | — | ✅ |
 | Locations | — | ✅ |
 | Subscription manifest | — | ✅ |
@@ -103,7 +103,7 @@ Imports from `satellite_config/` everything except LE, locations, and manifest (
 
 ---
 
-### Step 2 — Export org skeleton
+### Step 2 — Export LE and locations
 
 ```bash
 ./scripts/demo.sh 2
@@ -113,9 +113,9 @@ Imports from `satellite_config/` everything except LE, locations, and manifest (
 |---|---|
 | **Source** | `satellite_source.server_url` in `vars/satellite.yml` |
 | **Output** | `satellite_config_demo/` |
-| **Tags** | `organizations`, `lifecycle_environments`, `locations`, `vault_template` |
+| **Tags** | `lifecycle_environments`, `locations`, `vault_template` |
 
-> **What to say:** *"Now we export the organization skeleton from the source Satellite: org, lifecycle environments, and locations."*
+> **What to say:** *"Now we export lifecycle environments and locations from the source Satellite."*
 
 ---
 
@@ -131,7 +131,7 @@ Filters CaC to keep only objects for `satellite_organization_name`. Shared locat
 
 ---
 
-### Step 4 — Skeleton import + manifest
+### Step 4 — LE, locations + manifest import
 
 ```bash
 ./scripts/demo.sh 4
@@ -140,19 +140,19 @@ Filters CaC to keep only objects for `satellite_organization_name`. Shared locat
 | | |
 |---|---|
 | **Target** | `satellite_target.server_url` in `vars/satellite.yml` |
-| **Tags** | `organizations`, `lifecycle_environments`, `locations`, `manifest`, `manifest_validate` |
+| **Tags** | `lifecycle_environments`, `locations`, `manifest`, `manifest_validate` |
 | **Secrets** | `vars/vault_import.yml` |
 | **Manifest** | local zip file |
 
 > **What to say:** *"Finally we apply lifecycle environments, locations, and the subscription manifest. With that, the organization is operational on the target."*
 
-**Verify in the UI:** Administer → Organizations → your organization name.
+**Verify in the UI:** Content → Lifecycle Environments, Administer → Locations, and the subscription manifest on the organization.
 
 ---
 
 ### Step 0 — Repeat only step 4 (without factory reset)
 
-If you have already run the demo and want to repeat only the skeleton + manifest part:
+If you have already run the demo and want to repeat only the LE, locations + manifest part:
 
 ```bash
 ./scripts/demo.sh 0    # removes LE, locations, manifest
@@ -171,11 +171,11 @@ ansible-playbook playbooks/filter_organization.yml -e @vars/satellite.yml
 
 # Live demo (steps 1–4 only; preparation must already be done)
 ./scripts/demo.sh 1      # bulk import
-./scripts/demo.sh 2      # export skeleton
-./scripts/demo.sh 3      # filter organization
-./scripts/demo.sh 4      # import + manifest
+./scripts/demo.sh 2      # export LE + locations
+./scripts/demo.sh 3      # filter CaC
+./scripts/demo.sh 4      # import LE + locations + manifest
 
-# Repeat skeleton import only (no factory reset, no re-export)
+# Repeat demo import only (no factory reset, no re-export)
 ./scripts/demo.sh 0 && ./scripts/demo.sh 4
 ```
 

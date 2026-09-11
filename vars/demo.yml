@@ -2,11 +2,11 @@
 # Demo CaC path (separate from bulk satellite_config/)
 satellite_configuration_filetree_path: "{{ playbook_dir }}/../satellite_config_demo"
 
-# Demo import uploads manifest and applies org skeleton objects.
+# Demo import uploads manifest and applies LE + locations.
 satellite_configuration_dispatch_manifest_upload: true
 satellite_configuration_dispatch_manifest_validate: true
 satellite_configuration_dispatch_content_view_publish_promote: false
 
 # Tags used by scripts/demo.sh
-satellite_demo_export_tags: organizations,lifecycle_environments,locations,vault_template
-satellite_demo_import_tags: organizations,lifecycle_environments,locations,manifest,manifest_validate
+satellite_demo_export_tags: lifecycle_environments,locations,vault_template
+satellite_demo_import_tags: lifecycle_environments,locations,manifest,manifest_validate

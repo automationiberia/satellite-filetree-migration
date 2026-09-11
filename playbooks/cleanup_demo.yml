@@ -1,5 +1,5 @@
 ---
-# Remove only objects applied by demo step 3 (org skeleton import tags).
+# Remove only objects applied by demo step 4 (LE, locations, manifest import tags).
 # Does NOT touch bulk-imported content (CVs, subnets, domains, hostgroups, etc.).
 # Usage: ansible-playbook playbooks/cleanup_demo.yml -e @vars/satellite.yml -e @vars/demo.yml
 - name: Cleanup demo objects on target Satellite

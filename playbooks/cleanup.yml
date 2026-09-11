@@ -1,16 +1,21 @@
 ---
 # Factory reset on the target Satellite: remove all organizations except Default Organization
 # and delete global migration artifacts (hostgroups, subnets, domains, locations, etc.).
+# Skips locked/built-in templates and OS in use by the Satellite host itself.
 # Usage: ansible-playbook playbooks/cleanup.yml -e @vars/satellite.yml
 - name: Cleanup target Satellite
   hosts: localhost
   connection: local
   gather_facts: false
   environment: "{{ satellite_proxy_environment }}"
+  roles:
+    - role: infra.satellite_configuration.global_vars
   collections:
+    - infra.satellite_configuration
     - redhat.satellite
   vars:
     satellite: "{{ satellite_target }}"
+    satellite_cleanup_hostname: "{{ satellite.server_url | urlsplit('hostname') }}"
     satellite_cleanup_preserve_users:
       - admin
     satellite_cleanup_preserve_locations:
@@ -18,7 +23,8 @@
     satellite_cleanup_preserve_organizations:
       - Default Organization
     satellite_cleanup_preserve_domains:
-      - "{{ (satellite.server_url | urlsplit('hostname')).split('.')[1:] | join('.') }}"
+      - "{{ satellite_cleanup_hostname.split('.')[1:] | join('.') }}"
+    cleanup_preserve_operatingsystem_ids: []
   module_defaults:
     group/redhat.satellite.satellite:
       username: "{{ satellite.admin.username }}"
@@ -75,6 +81,7 @@
     - name: Delete subnets
       redhat.satellite.subnet:
         name: "{{ item.name }}"
+        network: "{{ item.network }}"
         state: absent
       loop: "{{ cleanup_subnets.subnets | default([]) }}"
       loop_control:
@@ -115,6 +122,24 @@
         - item.name not in satellite_cleanup_preserve_locations
       ignore_errors: true
 
+    - name: Get Satellite host record
+      redhat.satellite.host_info:
+        name: "{{ satellite_cleanup_hostname }}"
+      register: cleanup_satellite_host
+      failed_when: false
+
+    - name: Remember operating system used by Satellite host
+      ansible.builtin.set_fact:
+        cleanup_preserve_operatingsystem_ids: >-
+          {{
+            [cleanup_satellite_host.host.operatingsystem_id | int]
+            if (
+              cleanup_satellite_host.host is defined
+              and cleanup_satellite_host.host.operatingsystem_id is defined
+            )
+            else []
+          }}
+
     - name: Get operating systems
       redhat.satellite.resource_info:
         resource: operatingsystems
@@ -130,38 +155,46 @@
       loop: "{{ cleanup_operatingsystems.resources | default([]) }}"
       loop_control:
         label: "{{ item.name }}"
-      when: cleanup_operatingsystems.resources | default([]) | length > 0
+      when:
+        - cleanup_operatingsystems.resources | default([]) | length > 0
+        - item.id | int not in cleanup_preserve_operatingsystem_ids
       ignore_errors: true
 
     - name: Get provisioning templates
       redhat.satellite.resource_info:
         resource: provisioning_templates
+        full_details: true
       register: cleanup_provisioning_templates
 
-    - name: Delete provisioning templates
+    - name: Delete custom provisioning templates
       redhat.satellite.provisioning_template:
         name: "{{ item.name }}"
-        template_kind: "{{ item.template_kind | default(item.kind) }}"
+        kind: "{{ 'snippet' if (item.snippet | default(false) | bool) else item.template_kind_name }}"
         state: absent
       loop: "{{ cleanup_provisioning_templates.resources | default([]) }}"
       loop_control:
         label: "{{ item.name }}"
-      when: cleanup_provisioning_templates.resources | default([]) | length > 0
+      when:
+        - cleanup_provisioning_templates.resources | default([]) | length > 0
+        - not (item.locked | default(false) | bool)
       ignore_errors: true
 
     - name: Get partition tables
       redhat.satellite.resource_info:
         resource: ptables
+        full_details: true
       register: cleanup_partition_tables
 
-    - name: Delete partition tables
+    - name: Delete custom partition tables
       redhat.satellite.partition_table:
         name: "{{ item.name }}"
         state: absent
       loop: "{{ cleanup_partition_tables.resources | default([]) }}"
       loop_control:
         label: "{{ item.name }}"
-      when: cleanup_partition_tables.resources | default([]) | length > 0
+      when:
+        - cleanup_partition_tables.resources | default([]) | length > 0
+        - not (item.locked | default(false) | bool)
       ignore_errors: true
 
     - name: Get LDAP authentication sources
@@ -225,6 +258,7 @@
         label: "{{ item.name }}"
       when:
         - cleanup_roles.resources | default([]) | length > 0
+        - item.name not in satellite_builtin_role_name_skips
         - item.builtin | default(0) | int == 0
         - not (item.locked | default(false) | bool)
       ignore_errors: true

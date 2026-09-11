@@ -32,11 +32,11 @@ case "${STEP}" in
     ./scripts/run-bulk-import.sh
     ;;
   2|export)
-    echo "=== DEMO STEP 2: Export organizations, lifecycle environments and locations ==="
+    echo "=== DEMO STEP 2: Export lifecycle environments and locations ==="
     ansible-playbook playbooks/export.yml \
       -e @vars/satellite.yml \
       -e @vars/demo.yml \
-      --tags organizations,lifecycle_environments,locations,vault_template
+      --tags lifecycle_environments,locations,vault_template
     ;;
   3|filter)
     echo "=== DEMO STEP 3: Filter CaC for target organization ==="
@@ -45,12 +45,12 @@ case "${STEP}" in
       -e @vars/demo.yml
     ;;
   4|import)
-    echo "=== DEMO STEP 4: Import org skeleton + lifecycle environments + locations + manifest ==="
+    echo "=== DEMO STEP 4: Import lifecycle environments + locations + manifest ==="
     ansible-playbook playbooks/import.yml \
       -e @vars/satellite.yml \
       -e @vars/demo.yml \
       -e @vars/vault_import.yml \
-      --tags organizations,lifecycle_environments,locations,manifest,manifest_validate
+      --tags lifecycle_environments,locations,manifest,manifest_validate
     ;;
   *)
     cat <<'EOF'
@@ -58,7 +58,7 @@ Usage: ./scripts/demo.sh <step>
 
     0 | cleanup       Remove demo objects only (LE, locations, manifest) from target Satellite
     1 | bulk          Bulk import from satellite_config/ (~30s; skips LE, locations, manifest)
-    2 | export        Export org + lifecycle environments + locations from source Satellite
+    2 | export        Export lifecycle environments + locations from source Satellite
     3 | filter        Keep only satellite_organization_name objects in satellite_config_demo/
     4 | import        Apply LE + locations + manifest on target Satellite
   100 | full-cleanup  Factory reset target + wipe local CaC (prep only — run BEFORE export-full.sh)
