@@ -200,6 +200,7 @@ Hidden parameters or target-specific values that export cannot carry in plain te
 |-------|----------|
 | `satellite is undefined` | Add `tags: always` to the connection `set_fact` task in `export.yml` / `import.yml` |
 | `Found no results while searching for organizations with name="…"` | Run `./scripts/demo.sh 3` to filter locations and other shared objects |
+| `Found no results while searching for products with name="Red Hat Enterprise Linux…"` | CaC not filtered after re-export: run `ansible-playbook playbooks/filter_organization.yml -e @vars/satellite.yml` (or re-run `./scripts/demo.sh 1`, which auto-filters) |
 | `vault_satellite_location_parameters is undefined` | Fill in `vars/vault_import.yml` |
 | Manifest download from Customer Portal | Set `manifest_download: false` in `vars/satellite.yml` |
 | `TLSV1_UNRECOGNIZED_NAME` on export | Use `./scripts/export-full.sh` (`HTTP_PROXY` required in shell) |

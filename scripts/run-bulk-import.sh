@@ -9,6 +9,8 @@ cd "${ROOT_DIR}"
 # shellcheck source=ensure-http-proxy.sh
 source "${ROOT_DIR}/scripts/ensure-http-proxy.sh"
 
+"${ROOT_DIR}/scripts/ensure-cac-filtered.sh"
+
 echo "=== BULK IMPORT: skip demo objects + settings + ldap + roles (other-org refs) ==="
 ansible-playbook playbooks/import.yml \
   -e @vars/satellite.yml \
