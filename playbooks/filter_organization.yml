@@ -7,6 +7,8 @@
   gather_facts: false
   vars:
     satellite_cac_path: "{{ satellite_configuration_filetree_path }}"
+    satellite_capsule_name_source: "{{ satellite_source.server_url | urlsplit('hostname') }}"
+    satellite_capsule_name_target: "{{ satellite_target.server_url | urlsplit('hostname') }}"
     satellite_filter_org_scoped_keys:
       - satellite_activation_keys
       - satellite_products

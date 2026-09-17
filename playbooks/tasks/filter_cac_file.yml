@@ -67,6 +67,32 @@
     cac_filter_applied: true
   when: not (cac_filter_applied | default(false) | bool)
 
+- name: Translate capsule names in filtered CaC items
+  ansible.builtin.set_fact:
+    cac_items_filtered: "{{ cac_items_with_translated_capsules }}"
+  vars:
+    cac_items_with_translated_capsules: >-
+      {%- set ns = namespace(items=[]) -%}
+      {%- for item in cac_items_filtered -%}
+      {%- if item.capsules is defined -%}
+      {%- set translated_capsules = [] -%}
+      {%- for capsule in item.capsules -%}
+      {%- set new_name = satellite_capsule_name_target if capsule.name == satellite_capsule_name_source else capsule.name -%}
+      {%- set _ = translated_capsules.append(capsule | combine({'name': new_name})) -%}
+      {%- endfor -%}
+      {%- set _ = ns.items.append(item | combine({'capsules': translated_capsules})) -%}
+      {%- else -%}
+      {%- set _ = ns.items.append(item) -%}
+      {%- endif -%}
+      {%- endfor -%}
+      {{ ns.items }}
+  when:
+    - cac_filter_applied | default(false) | bool
+    - cac_items_filtered | default([]) | length > 0
+    - satellite_capsule_name_source is defined
+    - satellite_capsule_name_target is defined
+    - satellite_capsule_name_source != satellite_capsule_name_target
+
 - name: Remove CaC fragment when filtered list is empty
   ansible.builtin.file:
     path: "{{ cac_file_path }}"
