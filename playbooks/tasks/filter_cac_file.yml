@@ -114,6 +114,14 @@
         content: "{{ cac_document | to_nice_yaml(indent=2, sort_keys=false) }}"
         mode: "0664"
 
+    - name: Format filtered CaC fragment
+      infra.satellite_configuration.format_yaml:
+        path: "{{ cac_file_path }}"
+        preserve_comments: false
+        explicit_start: true
+        explicit_end: true
+        auto_block_scalars: true
+
 - name: Reset parsed CaC variables
   ansible.builtin.set_fact:
     cac_data: null
