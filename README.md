@@ -15,7 +15,9 @@ Typical flow: **export** from a source Satellite → **filter** for one organiza
 
 ```bash
 # 1. Install collections
+# Local/demo: redhat.satellite needs an Automation Hub token (ansible.cfg / ansible-galaxy).
 ansible-galaxy collection install -r requirements.yml
+# CI / pre-commit without Hub: ./scripts/ci-install-collections.sh
 
 # 2. Optional: Python deps for proxy bridge
 python3 -m venv .venv

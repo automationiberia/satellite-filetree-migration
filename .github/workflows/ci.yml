@@ -22,7 +22,8 @@ jobs:
       - name: Install tooling
         run: pip install -r ci/requirements.txt
       - name: Install Ansible collections
-        run: ansible-galaxy collection install -r requirements.yml -p collections
+        # Galaxy-only install + theforeman→redhat.satellite alias (no Hub token).
+        run: ./scripts/ci-install-collections.sh
       - name: Run pre-commit
         env:
           ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/collections

@@ -12,8 +12,9 @@ export ANSIBLE_LOCAL_TEMP="${ROOT}/.ansible/tmp"
 
 mkdir -p "${ANSIBLE_LOCAL_TEMP}" collections
 
-if [[ ! -d collections/ansible_collections/infra/satellite_configuration ]]; then
-  ansible-galaxy collection install -r requirements.yml -p collections
+if [[ ! -d collections/ansible_collections/infra/satellite_configuration ]] \
+  || [[ ! -d collections/ansible_collections/redhat/satellite ]]; then
+  "${ROOT}/scripts/ci-install-collections.sh"
 fi
 
 mkdir -p satellite_config

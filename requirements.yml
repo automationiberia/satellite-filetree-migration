@@ -1,4 +1,6 @@
 ---
 collections:
   - name: infra.satellite_configuration
+  # Requires Automation Hub / console.redhat.com token (not on Galaxy).
+  # For CI without Hub secrets, use ./scripts/ci-install-collections.sh instead.
   - name: redhat.satellite

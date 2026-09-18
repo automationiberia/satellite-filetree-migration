@@ -1,0 +1,6 @@
+---
+# Galaxy-only collections for CI (no Automation Hub token required).
+# Local demos still use requirements.yml (redhat.satellite from Automation Hub).
+collections:
+  - name: theforeman.foreman
+  - name: infra.satellite_configuration
