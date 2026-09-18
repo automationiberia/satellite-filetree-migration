@@ -5,8 +5,10 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# shellcheck source=scripts/ci-ansible-env.sh
+source "${ROOT}/scripts/ci-ansible-env.sh"
+
 export ANSIBLE_LOCAL_TEMP="${ROOT}/.ansible/tmp"
-export ANSIBLE_COLLECTIONS_PATH="${ROOT}/collections:${HOME}/.ansible/collections:/usr/share/ansible/collections"
 
 mkdir -p "${ANSIBLE_LOCAL_TEMP}" collections
 

@@ -5,7 +5,8 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-export ANSIBLE_COLLECTIONS_PATH="${ROOT}/collections:${HOME}/.ansible/collections:/usr/share/ansible/collections"
+# shellcheck source=scripts/ci-ansible-env.sh
+source "${ROOT}/scripts/ci-ansible-env.sh"
 
 "${ROOT}/scripts/ci-ansible-syntax-check.sh"
 ansible-lint playbooks/

@@ -10,7 +10,7 @@ Migration from `satellite-source.example.com` → `satellite-target.example.com`
 ## Demo architecture
 
 | Phase | Directory | What it does | When |
-|-------|-----------|--------------|------|
+| ------- | ----------- | -------------- | ------ |
 | **Preparation** | `satellite_config/` | Factory reset (optional) → full export → filter | Before the session (or the night before) |
 | **Live demo** | `satellite_config/` + `satellite_config_demo/` | Bulk → demo export → filter → LE/locations/manifest import | In front of the audience |
 | **Reset (demo only)** | — | Step 0: undo demo import (LE, locations, manifest) | Between live runs, without re-exporting |
@@ -18,7 +18,7 @@ Migration from `satellite-source.example.com` → `satellite-target.example.com`
 ### Live steps (1–4)
 
 | Step | What it does | Approx. duration |
-|------|--------------|------------------|
+| ------ | -------------- | ------------------ |
 | **1 — Bulk** | Imports domains, CVs, subnets, sync plans, host collections… | ~30 s |
 | **2 — Export** | Exports LE + locations from source | ~1 min |
 | **3 — Filter** | Keeps only the target organization in demo CaC | ~5 s |
@@ -27,7 +27,7 @@ Migration from `satellite-source.example.com` → `satellite-target.example.com`
 ### What each step imports
 
 | Object | Bulk (step 1) | Demo import (step 4) |
-|--------|---------------|----------------------|
+| -------- | --------------- | ---------------------- |
 | Domains, subnets, CVs, sync plans… | ✅ | — |
 | Target organization | ✅ (skeleton) | — |
 | Lifecycle environments | — | ✅ |
@@ -43,7 +43,7 @@ Migration from `satellite-source.example.com` → `satellite-target.example.com`
 **Only if you do not have direct access to the Satellites from your machine.**
 
 | Scenario | Bridge required? |
-|----------|------------------|
+| ---------- | ------------------ |
 | VPN / internal network with direct access to Satellite hostnames | **No** |
 | SOCKS5 only on `localhost:51313` (e.g. `ssh -D 51313`) | **Yes** |
 
@@ -60,7 +60,7 @@ All demo scripts (`demo.sh`, `run-bulk-import.sh`, `export-full.sh`) configure t
 Run these steps **in order**. Step 100 is optional but, if used, **must come before** `export-full.sh` — it deletes local `satellite_config/` and `satellite_config_demo/`, so running it after export would wipe the CaC you just generated.
 
 | Step | Command | Satellite | What it does |
-|------|---------|-----------|--------------|
+| ------ | --------- | ----------- | -------------- |
 | **100** (optional) | `./scripts/demo.sh 100` | **Target** | Factory reset: all orgs except Default Organization, globals, local CaC dirs |
 | **—** | `./scripts/export-full.sh` | **Source** | Full export → `satellite_config/` (~10 min) |
 | **—** | `ansible-playbook playbooks/filter_organization.yml …` | — | Filter CaC to target organization only |
@@ -110,7 +110,7 @@ Imports from `satellite_config/` everything except LE, locations, and manifest (
 ```
 
 | | |
-|---|---|
+| --- | --- |
 | **Source** | `satellite_source.server_url` in `vars/satellite.yml` |
 | **Output** | `satellite_config_demo/` |
 | **Tags** | `lifecycle_environments`, `locations`, `vault_template` |
@@ -138,7 +138,7 @@ Filters CaC to keep only objects for `satellite_organization_name`. Shared locat
 ```
 
 | | |
-|---|---|
+| --- | --- |
 | **Target** | `satellite_target.server_url` in `vars/satellite.yml` |
 | **Tags** | `lifecycle_environments`, `locations`, `manifest`, `manifest_validate` |
 | **Secrets** | `vars/vault_import.yml` |
@@ -197,7 +197,7 @@ Hidden parameters or target-specific values that export cannot carry in plain te
 ## Troubleshooting
 
 | Error | Solution |
-|-------|----------|
+| ------- | ---------- |
 | `satellite is undefined` | Add `tags: always` to the connection `set_fact` task in `export.yml` / `import.yml` |
 | `Found no results while searching for organizations with name="…"` | Run `./scripts/demo.sh 3` to filter locations and other shared objects |
 | `Found no results while searching for products with name="Red Hat Enterprise Linux…"` | CaC not filtered after re-export: run `ansible-playbook playbooks/filter_organization.yml -e @vars/satellite.yml` (or re-run `./scripts/demo.sh 1`, which auto-filters) |

@@ -5,7 +5,7 @@ Ansible playbooks and scripts to migrate a Red Hat Satellite organization betwee
 The collection’s **filetree** workflow drives this repo:
 
 | Role | Purpose in this repo |
-|------|----------------------|
+| ------ | ---------------------- |
 | `filetree_create` | Export Satellite config to YAML (`playbooks/export.yml`) |
 | `filetree_read` + `dispatch` | Import YAML back to a target Satellite (`playbooks/import.yml`) |
 
@@ -51,7 +51,7 @@ pre-commit run --all-files   # manual run
 ## Main commands
 
 | Command | Purpose |
-|---------|---------|
+| --------- | --------- |
 | `./scripts/export-full.sh` | Full export from source → `satellite_config/` |
 | `ansible-playbook playbooks/filter_organization.yml -e @vars/satellite.yml` | Filter CaC for `satellite_organization_name` |
 | `./scripts/run-bulk-import.sh` | Bulk import (skips LE, locations, manifest) |
